@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		currentState="default"
+		mouseDown="mouseDownHandler(event)"
+		creationComplete="creationCompleteHandler()"
+		fontSize="16" color="#222222">
+
+	<fx:Script>
+		<![CDATA[
+
+			[Bindable]
+			public var amount:Number;
+
+			[Bindable]
+			public var percent:Number;
+
+			[Bindable]
+			public var dealName:String;
+						
+			[Bindable]
+			public var date:Number;
+
+			protected var timer:Timer = new Timer(700, 1);
+			
+			protected var lastX:Number;
+			protected var lastY:Number;
+
+			public static var MIN_SIZE:Number = 100;
+			public static var MAX_SIZE:Number = 400;
+			
+			protected function creationCompleteHandler():void
+			{
+				timer.addEventListener(TimerEvent.TIMER, timerHandler);	
+			}
+			
+			protected function mouseDownHandler(event:MouseEvent):void
+			{
+				event.stopPropagation();
+				currentState = "dragging";
+				timer.start();
+				lastX = event.stageX;
+				lastY = event.stageY;
+				startDrag();
+				systemManager.addEventListener(MouseEvent.MOUSE_MOVE, mouseMoveHandler);
+				systemManager.addEventListener(MouseEvent.MOUSE_UP, mouseUpHandler);
+			}
+			
+			protected function mouseMoveHandler(event:MouseEvent):void
+			{
+				if (currentState == "dragging")
+					dragBubble(event);
+				else if (currentState == "zooming")
+					zoomBubble(event);
+
+				lastX = event.stageX;
+				lastY = event.stageY;
+			}
+			
+			protected function dragBubble(event:MouseEvent):void
+			{
+				timer.stop();
+				percent = 100 - (y + height / 2) / parent.height * 100;
+				date = (x + width / 2) / parent.width * 100;
+				dispatchEvent(new Event("bubbleDragged", true));
+			}
+			
+			protected function zoomBubble(event:MouseEvent):void
+			{
+				var offsetX:Number = event.stageX - lastX;
+				var offsetY:Number = event.stageY - lastY;
+				var diameter:Number;
+				var offset:Number;
+
+				if (offsetY > 0)
+					offset = offsetY>offsetX?offsetY:offsetX;
+				else
+					offset = offsetY>offsetX?offsetX:offsetY;
+
+				if (width + offset < MIN_SIZE) {
+					offset = MIN_SIZE - width;
+				}
+				else if (width + offset > MAX_SIZE) 
+				{
+					offset = MAX_SIZE - width;
+				}
+				
+				x -= offset / 2;
+				y -= offset / 2;
+				
+				width += offset;
+				height += offset;
+				
+				amount = width * 1000;
+				dispatchEvent(new Event("bubbleZoomed", true));
+			}
+
+			protected function mouseUpHandler(event:MouseEvent):void
+			{
+				systemManager.removeEventListener(MouseEvent.MOUSE_MOVE, mouseMoveHandler);
+				systemManager.removeEventListener(MouseEvent.MOUSE_UP, mouseUpHandler);
+
+				timer.stop();
+				stopDrag();
+				currentState = "default";
+			}
+			
+			protected function timerHandler(event:TimerEvent):void
+			{
+				stopDrag();
+				currentState = "zooming";
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<s:CurrencyFormatter id="cf" fractionalDigits="0" useCurrencySymbol="true"/>
+		<s:NumberFormatter id="nf" fractionalDigits="0"/>
+		<s:DateTimeFormatter id="df" dateTimePattern="MMMM dd"/>
+	</fx:Declarations>
+	
+	<s:states>
+		<s:State name="default"/>
+		<s:State name="dragging"/>
+		<s:State name="zooming"/>
+	</s:states>
+	
+	<s:Ellipse width="100%" height="100%">
+		<s:stroke>
+			<s:SolidColorStroke color="#00719b" weight="1" weight.zooming="4"/>
+		</s:stroke>
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry color="#00BAFF" ratio="0" alpha=".8" alpha.dragging=".4" alpha.zooming=".6"/>                
+				<s:GradientEntry color="#00719b" ratio="1" alpha=".8" alpha.dragging=".4" alpha.zooming=".6"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Ellipse>
+
+	<s:Label id="log" text="{dealName}" verticalCenter="-30" horizontalCenter="0"/>
+	<s:Label text="${nf.format(amount)}" verticalCenter="-10" horizontalCenter="0"/>
+	<s:Label text="{df.format(new Date(new Date().time + 86400000 * Number(date)))}" verticalCenter="10" horizontalCenter="0"/>
+	<s:Label text="{nf.format(percent)}%" verticalCenter="30" horizontalCenter="0"/>
+
+</s:Group>

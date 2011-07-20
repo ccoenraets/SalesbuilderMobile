@@ -1,0 +1,16 @@
+@namespace "library://ns.adobe.com/flex/spark";
+
+ActionBar 
+{
+	skinClass: ClassReference("skins.ActionBarSkin");
+}
+
+View
+{
+	backgroundColor: #DCDCDC;
+}
+
+global
+{
+	fontSize: 20;
+}

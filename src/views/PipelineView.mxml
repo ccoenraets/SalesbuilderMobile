@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" xmlns:charts="charts.*" backgroundColor="#DCDCDC">
+
+	<fx:Script>
+		<![CDATA[
+			import charts.Bubble;
+			
+			import spark.skins.mobile.TextInputSkin;
+			
+			protected function addBubble():void
+			{
+				var bubble:Bubble = chart.addBubble(dealName.text, 150000, 50, 0);
+				TextInputSkin
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:titleContent>
+		<s:Image source="@Embed('assets/logo.png')"/>
+	</s:titleContent>
+
+	<s:actionContent>
+		<s:TextInput id="dealName" text="NewDeal" width="180" color="#333333" height="40"/>
+		<s:Button icon="@Embed('assets/plus.png')" click="addBubble()" height="55"/>
+	</s:actionContent>
+	
+	<charts:PipelineChart id="chart" top="10" left="10" right="10" bottom="10" width="5000"/>
+
+	
+</s:View>

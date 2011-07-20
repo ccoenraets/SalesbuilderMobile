@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" xmlns:charts="charts.*" 
+		clipAndEnableScrolling="true"
+		creationComplete="completeHandler()">
+	
+	<fx:Script>
+
+		<![CDATA[
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.DragEvent;
+			import mx.events.ResizeEvent;
+			
+			[Bindable]
+			protected var pipelineTotal:Number = 0;
+			
+			protected var bubbles:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			public var scrollAreaWidth:Number;
+
+			protected function completeHandler():void
+			{
+				Multitouch.inputMode = MultitouchInputMode.GESTURE;
+				rect.addEventListener(TransformGestureEvent.GESTURE_ZOOM, zoomHandler);
+
+				addEventListener(ResizeEvent.RESIZE, resizeHandler);
+				addEventListener(StageOrientationEvent.ORIENTATION_CHANGE, orientationChangeHandler);
+				addEventListener("bubbleDragged", bubbleChangeHandler);
+				addEventListener("bubbleZoomed", bubbleChangeHandler);
+
+				addBubble("Alpha", 130000, 65, 5);
+				addBubble("Lorem", 180000, 25, 10);
+				addBubble("Ipsum", 150000, 80, 20);
+				addBubble("Beta", 250000, 35, 35);
+				addBubble("Gamma", 200000, 75, 50);
+				addBubble("Delta", 280000, 50, 60);
+				addBubble("BigDeal", 250000, 80, 70);
+				addBubble("Giant", 120000, 35, 75);
+				addBubble("Epsilon", 290000, 60, 85);
+				addBubble("Kappa", 125000, 30, 90);
+				
+				calculateTotal();	
+			}
+			
+			private function zoomHandler(e:TransformGestureEvent):void
+			{
+				var w:Number = content.width * e.scaleX;
+				if (e.scaleX>1)
+					content.width = w > 5000 ? 5000 : w;
+				else
+				{
+					content.width = w < width ? width : w;
+					if (content.x + content.width < width) content.x = width - content.width;
+				}
+				renderBubbles();
+			}
+			
+			public function addBubble(dealName:String, amount:Number, percent:Number, date:Number=0):Bubble
+			{
+				var bubble:Bubble = new Bubble();
+				bubble.dealName = dealName;
+				bubble.amount = amount;
+				bubble.percent = percent;
+				if (date == 0)
+				{
+					bubble.date = (scroller.viewport.horizontalScrollPosition + scroller.width/2) / scrollAreaWidth * 100;
+					bubble.width = bubble.amount / 1000;
+					bubble.height = bubble.amount / 1000;
+					bubble.x = bubble.date / 100 * scrollAreaWidth - bubble.width / 2; 
+					bubbleMove.target = bubble;
+					bubbleMove.yTo = (100 - bubble.percent) / 100 * (height - 80) - bubble.height / 2;
+					bubbleMove.play();
+				}
+				else
+				{
+					bubble.date = date;
+				}
+				bubbles.addItem(bubble);
+				content.addElement(bubble);
+				return bubble;
+			}
+
+			protected function renderBubbles():void
+			{
+				var bubble:Bubble;
+				for (var i:int=0; i<bubbles.length; i++)
+				{
+					bubble = bubbles.getItemAt(i) as Bubble;
+					bubble.width = bubble.amount / 1000;
+					bubble.height = bubble.amount / 1000;
+					bubble.x = bubble.date / 100 * scrollAreaWidth - bubble.width / 2; 
+					bubble.y = (100 - bubble.percent) / 100 * (height - 80) - bubble.height / 2;
+				}
+			}
+
+			protected function calculateTotal():void
+			{
+				var bubble:Bubble;
+				var t:Number = 0;
+				for (var i:int=0; i<bubbles.length; i++)
+				{
+					bubble = bubbles.getItemAt(i) as Bubble;
+					t += bubble.amount * bubble.percent / 100;
+				}
+				pipelineTotal = t;
+			}
+			
+			protected function resizeHandler(event:ResizeEvent):void
+			{
+				renderBubbles();
+			}
+			
+			protected function orientationChangeHandler(event:StageOrientationEvent):void
+			{
+				renderBubbles();
+			}
+			
+			
+			protected function bubbleChangeHandler(event:Event):void
+			{
+				calculateTotal();
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<s:CurrencyFormatter id="cf" useCurrencySymbol="true" fractionalDigits="0"/>
+		<s:NumberFormatter id="nf" fractionalDigits="0"/>
+		<s:DateTimeFormatter id="df" dateTimePattern="MMMM dd"/>
+		<charts:AxisArrayList id="vAxisData" step="-10"  max="90"/>
+		<charts:AxisArrayList id="hAxisData" step="5"  max="95"/>
+		<s:Bounce id="bounceEasing"/>
+		<s:Move id="bubbleMove" 
+				duration="800"
+				easer="{bounceEasing}"/>
+	</fx:Declarations>
+
+	
+	<fx:Binding source="{content.width}" destination="scrollAreaWidth"/>
+
+	<s:Label text="Sales Pipeline: ${nf.format(pipelineTotal)}" horizontalCenter="0" fontSize="20" color="#444444"/>
+	
+	<s:DataGroup dataProvider="{vAxisData}" top="30" bottom="0" left="0" right="0">
+		<s:itemRenderer>
+			<fx:Component>
+				<s:DataRenderer width="{outerDocument.width}" height="{Math.round(outerDocument.content.height/outerDocument.vAxisData.length)}">
+					<s:Label text="{data}%" width="50" textAlign="right" color="#444444" bottom="-6"/>
+					<s:Line left="54" right="0" bottom="0">
+						<s:stroke>
+							<s:SolidColorStroke color="#999999" weight="1"/>
+						</s:stroke>
+					</s:Line>
+				</s:DataRenderer>
+			</fx:Component>
+		</s:itemRenderer>
+		<s:layout>
+			<s:VerticalLayout gap="0"/>
+		</s:layout>
+	</s:DataGroup>
+
+	<s:Line left="54" right="0" top="30">
+		<s:stroke>
+			<s:SolidColorStroke color="#999999" weight="1"/>
+		</s:stroke>
+	</s:Line>
+	
+	<s:Scroller id="scroller" top="30" bottom="50" left="54" right="0">
+
+		<s:Group id="rect" left="0" right="0" top="0" bottom="0">
+
+			<s:DataGroup dataProvider="{hAxisData}" top="0" bottom="0" left="0" right="0">
+				<s:itemRenderer>
+					<fx:Component>
+						<s:DataRenderer height="{outerDocument.rect.height}" width="{Math.round(outerDocument.scrollAreaWidth/outerDocument.hAxisData.length)}">
+							<s:Label text="{outerDocument.df.format(new Date(new Date().time + 86400000 * Number(data)))}" left="0" rotation="45" color="#444444" bottom="0"/>
+							<s:Line left="0" top="0" bottom="50">
+								<s:stroke>
+									<s:SolidColorStroke color="#999999" weight="1"/>
+								</s:stroke>
+							</s:Line>
+						</s:DataRenderer>
+					</fx:Component>
+				</s:itemRenderer>
+				<s:layout>
+					<s:HorizontalLayout gap="0"/>
+				</s:layout>
+			</s:DataGroup>
+			
+			<s:Group id="content" width="5000" top="0" bottom="60" clipAndEnableScrolling="true"/>
+
+		</s:Group>
+		
+	</s:Scroller>
+	
+	<s:HSlider width="200" bottom="20" left="20" value="5000" minimum="{rect.width}" maximum="5000" showDataTip="false"
+			   change="content.width=event.target.value;renderBubbles();" visible="{!Multitouch.supportedGestures}"/>
+	
+</s:Group>
